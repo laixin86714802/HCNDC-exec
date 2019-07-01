@@ -1,0 +1,39 @@
+{
+  "mysql": {
+      "etl": {
+          "host": "localhost",
+          "port": 3306,
+          "database": "hcndc",
+          "user": "root",
+          "password": "123456",
+          "maxConnections": 10
+      }
+  },
+  "schedule": {
+    "max_overflow": 5,
+    "max_workers": 50,
+    "max_instances": 1
+  },
+  "master": {
+    "host": "localhost",
+    "port": 2333
+  },
+  "exec": {
+    "table_name": "schedule_table_1",
+    "port": 7890
+  },
+  "mongo": {
+    "host": "172.16.213.22",
+    "port": 27017,
+    "db": "logs"
+  },
+  "log": {
+      "level": "DEBUG",
+      "host": "localhost",
+      "port": 3690,
+      "tag": "etl.execute"
+  },
+  "env": {
+      "deploy": "dev"
+  }
+}
