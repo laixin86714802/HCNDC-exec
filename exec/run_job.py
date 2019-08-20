@@ -67,7 +67,7 @@ def exec_job(exec_id, job_id, server_dir, server_script):
         'type': 1,
         'time': local_to_utc()
     })
-    # 子进程
+    # 子进程, shell参数windows下False, linux下True
     p = subprocess.Popen(
         server_script,
         cwd=server_dir,
