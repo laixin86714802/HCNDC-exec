@@ -78,7 +78,7 @@ def exec_job(exec_id, job_id, server_dir, server_script):
     while True:
         # 正常日志
         for line in iter(p.stdout.readline, b''):
-            message = line.decode('utf-8', 'ignore').replace('\n', '').replace('\r', '')
+            message = line.decode('utf-8', 'ignore').rstrip()
             gevent.sleep(0)
             if message:
                 mongo.collection.insert({
@@ -93,7 +93,7 @@ def exec_job(exec_id, job_id, server_dir, server_script):
                 })
         # 异常日志
         for line in iter(p.stderr.readline, b''):
-            message = line.decode('utf-8', 'ignore').replace('\n', '').replace('\r', '')
+            message = line.decode('utf-8', 'ignore').rstrip()
             gevent.sleep(0)
             mongo.collection.insert({
                 'exec_id': exec_id,
