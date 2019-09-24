@@ -19,10 +19,12 @@ def scheduler_instant():
     scheduler.add_listener(listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
     scheduler.start()
 
+
 def rpc_instant():
     """rpc服务端"""
     t3 = ThreadedServer(RPCServer, port=config.exec.port, protocol_config=rpyc.core.protocol.DEFAULT_CONFIG)
     t3.start()
+
 
 def inner():
     """启动服务"""
@@ -31,6 +33,7 @@ def inner():
     t1.start()
     # rpc服务端
     rpc_instant()
+
 
 if __name__ == '__main__':
     run_with_reloader(inner)

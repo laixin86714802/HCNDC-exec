@@ -2,13 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import subprocess
-import gevent
 import time
 
 from model.scheduler import SchedulerModel
-from configs import db, log, config
-from conn.mongo import MongoLinks
-from util.time_local import local_to_utc
+from configs import db, log
 
 
 def start_job(exec_id, job_id, server_dir, server_script, status):
@@ -55,69 +52,34 @@ def exec_job(exec_id, job_id, server_dir, server_script):
     """执行任务"""
     # 执行任务开始
     SchedulerModel.exec_job_start(db.etl_db, exec_id, job_id)
-    # 日志对象
-    mongo = MongoLinks(config.mongo, 'job_logs')
-    mongo.collection.insert({
-        'exec_id': exec_id,
-        'job_id': job_id,
-        'level': 'INFO',
-        'server_dir': server_dir,
-        'server_script': server_script,
-        'message': '任务开始',
-        'type': 1,
-        'time': local_to_utc()
-    })
-    # 子进程, shell参数windows下False, linux下True
+    # 文本日志
+    file_name = './logs/%s_%s_%s.log' % (exec_id, job_id, time.strftime('%Y-%m-%d_%H%M%S', time.localtime()))
+    fw = open(file_name, 'w+')
+    # 添加执行任务开始日志
+    SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script, '任务开始', 1)
+    # 子进程
     p = subprocess.Popen(
         server_script,
         cwd=server_dir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=False
+        stdout=fw,
+        stderr=fw,
+        shell=True
     )
-    while True:
-        # 正常日志
-        for line in iter(p.stdout.readline, b''):
-            message = line.decode('utf-8', 'ignore').rstrip()
-            gevent.sleep(0)
+    with open(file_name, 'r+') as fr:
+        while True:
+            message = fr.readline().rstrip()
             if message:
-                mongo.collection.insert({
-                    'exec_id': exec_id,
-                    'job_id': job_id,
-                    'level': 'INFO',
-                    'server_dir': server_dir,
-                    'server_script': server_script,
-                    'message': message,
-                    'type': 2,
-                    'time': local_to_utc()
-                })
-        # 异常日志
-        for line in iter(p.stderr.readline, b''):
-            message = line.decode('utf-8', 'ignore').rstrip()
-            gevent.sleep(0)
-            mongo.collection.insert({
-                'exec_id': exec_id,
-                'job_id': job_id,
-                'level': 'ERROR',
-                'server_dir': server_dir,
-                'server_script': server_script,
-                'message': message,
-                'type': 2,
-                'time': local_to_utc()
-            })
-        # 结束
-        retcode = p.poll()
-        if retcode is not None:
-            mongo.collection.insert({
-                'exec_id': exec_id,
-                'job_id': job_id,
-                'level': 'INFO',
-                'server_dir': server_dir,
-                'server_script': server_script,
-                'message': '任务结束',
-                'type': 3,
-                'time': local_to_utc()
-            })
-            if retcode:
-                raise Exception('任务异常')
-            return
+                log.info('任务详情日志: [%s]' % message)
+                # 添加执行任务详情日志
+                SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script,
+                                                   message, 2)
+            # 结束
+            ret_code = p.poll()
+            if ret_code is not None:
+                # 添加执行任务结束日志
+                SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script,
+                                                   '任务结束', 3)
+                # 异常
+                if ret_code:
+                    raise Exception('任务异常')
+                return

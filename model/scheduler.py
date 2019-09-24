@@ -73,3 +73,21 @@ class SchedulerModel(object):
             'status': status
         })
         return result
+
+    @staticmethod
+    def add_exec_detail_job(cursor, exec_id, job_id, level, server_dir, server_script, message, type):
+        """添加执行任务详情日志"""
+        command = '''
+        INSERT INTO tb_schedule_detail_logs(exec_id, job_id, `level`, server_dir, server_script, `message`, `type`, insert_time)
+        VALUES (:exec_id, :job_id, :level, :server_dir, :server_script, :message, :type, UNIX_TIMESTAMP())
+        '''
+        result = cursor.insert(command, {
+            'exec_id': exec_id,
+            'job_id': job_id,
+            'level': level,
+            'server_dir': server_dir,
+            'server_script': server_script,
+            'message': message,
+            'type': type
+        })
+        return result
