@@ -27,7 +27,7 @@ app.config.from_object(SchedulerConfig())
 scheduler = Scheduler()
 
 # 日志对象
-log = create_logger(config.log, 'azkaban')
+log = create_logger(config, 'exec')
 
 # 数据库连接
 db = DictModel({

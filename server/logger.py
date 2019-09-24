@@ -2,16 +2,15 @@
 # author=veficos
 
 import logging
-from fluent.asynchandler import FluentHandler
-from fluent.handler import FluentRecordFormatter
 
 
 def create_logger(conf, name):
     """日志对象"""
     # 异步流
     logger = logging.getLogger(name)
-    level = logging.getLevelName(conf['level'])
+    level = logging.getLevelName(conf['log']['level'])
     logger.setLevel(level)
+    # fluented日志
     # handler = FluentHandler(tag=conf['tag'], host=conf['host'], port=conf['port'])
     # handler.setFormatter(FluentRecordFormatter(fmt={
     #     'level': '%(levelname)s',
@@ -24,7 +23,7 @@ def create_logger(conf, name):
     # handler.setLevel(level)
     # logger.addHandler(handler)
     # 控制台
-    if conf['env'] == 'dev':
+    if conf['env']['deploy'] == 'dev':
         stream_handler = logging.StreamHandler()
         stream_handler.setFormatter(
             logging.Formatter('%(asctime)s %(levelname)s [%(pathname)s:%(funcName)s:%(lineno)d] %(message)s'))
