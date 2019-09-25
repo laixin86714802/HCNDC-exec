@@ -69,7 +69,7 @@ def exec_job(exec_id, job_id, server_dir, server_script):
         while True:
             message = fr.readline().rstrip()
             if message:
-                log.info('任务详情日志: [%s]' % message)
+                log.debug('任务详情日志: [%s]' % message)
                 # 添加执行任务详情日志
                 SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script,
                                                    message, 2)

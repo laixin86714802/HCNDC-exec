@@ -6,7 +6,8 @@ import re
 from configs import db, log, config
 from model.scheduler import SchedulerModel
 from util.request_package import request
-from conn.mongo import MongoLock
+from conn.mysql_lock import MysqlLock
+
 
 def listener(event):
     """监听器"""
@@ -16,7 +17,7 @@ def listener(event):
     if event.exception:
         log.warn('执行完毕, 执行id: %s, 任务id: %s, 任务状态: %s' % (exec_id, job_id, 'failed'))
         # 修改数据库, 分布式锁
-        with MongoLock(config.mongo, 'scheduler_lock'):
+        with MysqlLock(config.mysql.etl, 'scheduler_lock'):
             SchedulerModel.update_exec_job_status(db.etl_db, exec_id, job_id, 'failed')
             # 回调web服务
             result = request(exec_id, 'failed')
@@ -26,7 +27,7 @@ def listener(event):
     else:
         log.info('执行完毕, 执行id: %s, 任务id: %s, 任务状态: %s' % (exec_id, job_id, 'succeeded'))
         # 修改数据库, 分布式锁
-        with MongoLock(config.mongo, 'scheduler_lock'):
+        with MysqlLock(config.mysql.etl, 'scheduler_lock'):
             SchedulerModel.update_exec_job_status(db.etl_db, exec_id, job_id, 'succeeded')
             # 回调web服务
             result = request(exec_id, 'succeeded')

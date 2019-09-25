@@ -28,7 +28,7 @@
     "db": "logs"
   },
   "log": {
-      "level": "DEBUG",
+      "level": "INFO",
       "host": "localhost",
       "port": 3690,
       "tag": "etl.execute"
