@@ -8,8 +8,10 @@ from exec.run_job import start_job
 from configs import log, scheduler, db, config
 from model.scheduler import SchedulerModel
 
+
 class RPCServer(rpyc.Service):
     """调度服务器端"""
+
     @staticmethod
     def exposed_execute(exec_id, job_id, server_dir, server_script, status):
         """接受任务"""
@@ -31,9 +33,8 @@ class RPCServer(rpyc.Service):
             if run_job:
                 return {'status': False, 'msg': '该任务已在运行中'}
             # scheduler.add_job(id=run_id, func=start_job, args=(exec_id, job_id, server_dir, server_script, status), trigger='interval', seconds=3)
-            scheduler.add_job(id=run_id, func=start_job, args=(exec_id, job_id, server_dir, server_script, status), next_run_time=next_run_time)
+            scheduler.add_job(id=run_id, func=start_job, args=(exec_id, job_id, server_dir, server_script, status),
+                              next_run_time=next_run_time)
             return {'status': True, 'msg': '任务已开始运行'}
         except Exception as e:
             return {'status': False, 'msg': e}
-
-
