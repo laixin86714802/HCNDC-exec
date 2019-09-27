@@ -22,16 +22,9 @@
     "table_name": "schedule_table_1",
     "port": 7890
   },
-  "mongo": {
-    "host": "172.16.163.8",
-    "port": 27017,
-    "db": "logs"
-  },
   "log": {
       "level": "INFO",
-      "host": "localhost",
-      "port": 3690,
-      "tag": "etl.execute"
+      "host": "localhost"
   },
   "env": {
       "deploy": "dev"

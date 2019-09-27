@@ -54,7 +54,7 @@ def exec_job(exec_id, job_id, server_dir, server_script):
     SchedulerModel.exec_job_start(db.etl_db, exec_id, job_id)
     # 文本日志
     file_name = './logs/%s_%s_%s.log' % (exec_id, job_id, time.strftime('%Y-%m-%d_%H%M%S', time.localtime()))
-    fw = open(file_name, 'w+')
+    fw = open(file_name, 'w')
     # 添加执行任务开始日志
     SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script, '任务开始', 1)
     # 子进程
@@ -63,23 +63,16 @@ def exec_job(exec_id, job_id, server_dir, server_script):
         cwd=server_dir,
         stdout=fw,
         stderr=fw,
-        shell=True
+        shell=True,
+        bufsize=0
     )
-    with open(file_name, 'r+') as fr:
-        while True:
-            message = fr.readline().rstrip()
-            if message:
-                log.debug('任务详情日志: [%s]' % message)
-                # 添加执行任务详情日志
-                SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script,
-                                                   message, 2)
-            # 结束
-            ret_code = p.poll()
-            if ret_code is not None:
-                # 添加执行任务结束日志
-                SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script,
-                                                   '任务结束', 3)
-                # 异常
-                if ret_code:
-                    raise Exception('任务异常')
-                return
+    p.wait()
+    for message in open(file_name, 'r'):
+        message = message.rstrip()
+        if message:
+            log.debug('任务详情日志: [%s]' % message)
+            # 添加执行任务详情日志
+            SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script, message, 2)
+    # 添加执行任务结束日志
+    SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script, '任务结束', 3)
+
