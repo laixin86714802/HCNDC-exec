@@ -2,9 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import rpyc
+import psutil
 import datetime
-from exec.run_job import start_job
+import platform
+import json
 
+from exec.run_job import start_job
 from configs import log, scheduler, db, config
 from model.scheduler import SchedulerModel
 
@@ -38,3 +41,34 @@ class RPCServer(rpyc.Service):
             return {'status': True, 'msg': '任务已开始运行'}
         except Exception as e:
             return {'status': False, 'msg': e}
+
+    @staticmethod
+    def exposed_test():
+        """测试连接"""
+        # CPU逻辑内核数
+        cpu_count = psutil.cpu_count()
+        # 系统版本
+        system = platform.platform()
+        # 磁盘使用
+        disk_result = {
+            'total': 0,
+            'used': 0,
+            'free': 0
+        }
+        disk_total = [psutil.disk_usage(i.mountpoint) for i in psutil.disk_partitions()]
+        for item in disk_total:
+            disk_result['total'] += item.total
+            disk_result['used'] += item.used
+            disk_result['free'] += item.free
+
+        disk_result['total'] = '%0.2fGB' % (disk_result['total'] / 2 ** 30)
+        disk_result['used'] = '%0.2fGB' % (disk_result['used'] / 2 ** 30)
+        disk_result['free'] = '%0.2fGB' % (disk_result['free'] / 2 ** 30)
+        # 内存使用
+        memory_total = psutil.virtual_memory()
+        memory_result = {
+            'total': '%0.2fGB' % (memory_total.total / 2 ** 30),
+            'used': '%0.2fGB' % (memory_total.used / 2 ** 30),
+            'free': '%0.2fGB' % (memory_total.free / 2 ** 30)
+        }
+        return json.dumps({'cpu': cpu_count, 'system': system, 'disk': disk_result, 'memory': memory_result})
