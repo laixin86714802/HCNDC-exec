@@ -71,4 +71,5 @@ class RPCServer(rpyc.Service):
             'used': '%0.2fGB' % (memory_total.used / 2 ** 30),
             'free': '%0.2fGB' % (memory_total.free / 2 ** 30)
         }
+        log.info('获取测试连接请求')
         return json.dumps({'cpu': cpu_count, 'system': system, 'disk': disk_result, 'memory': memory_result})
