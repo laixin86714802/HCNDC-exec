@@ -8,16 +8,17 @@ from model.scheduler import SchedulerModel
 from configs import db, log
 
 
-def start_job(exec_id, job_id, server_dir, server_script, status):
+def start_job(exec_id, job_id, server_dir, server_script, params, status):
     """开始任务"""
     log.info('开始任务: %s' % str({
         'exec_id': exec_id,
         'job_id': job_id,
         'server_dir': server_dir,
-        'server_script': server_script
+        'server_script': server_script,
+        'params': params
     }))
     if status == 'preparing':
-        exec_job(exec_id, job_id, server_dir, server_script)
+        exec_job(exec_id, job_id, server_dir, server_script, params)
     else:
         while True:
             # 查询状态
@@ -45,11 +46,14 @@ def start_job(exec_id, job_id, server_dir, server_script, status):
                     'server_dir': server_dir,
                     'server_script': server_script
                 }))
-                exec_job(exec_id, job_id, server_dir, server_script)
+                exec_job(exec_id, job_id, server_dir, server_script, params)
 
 
-def exec_job(exec_id, job_id, server_dir, server_script):
+def exec_job(exec_id, job_id, server_dir, server_script, params):
     """执行任务"""
+    # 配置参数
+    params_str = ' '.join(params) if ' '.join(params).startswith(' ') else ' ' + ' '.join(params)
+    server_script = server_script + params_str
     # 执行任务开始
     SchedulerModel.exec_job_start(db.etl_db, exec_id, job_id)
     # 文本日志
@@ -72,7 +76,7 @@ def exec_job(exec_id, job_id, server_dir, server_script):
         if message:
             log.debug('任务详情日志: [%s]' % message)
             # 添加执行任务详情日志
-            SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script, message, 2)
+            SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script, message,
+                                               2)
     # 添加执行任务结束日志
     SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script, '任务结束', 3)
-

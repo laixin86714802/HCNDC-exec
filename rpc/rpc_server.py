@@ -16,7 +16,7 @@ class RPCServer(rpyc.Service):
     """调度服务器端"""
 
     @staticmethod
-    def exposed_execute(exec_id, job_id, server_dir, server_script, status):
+    def exposed_execute(exec_id, job_id, server_dir, server_script, params, status):
         """接受任务"""
         # 添加至调度器
         run_id = 'exec_%s_%s' % (exec_id, job_id)
@@ -25,6 +25,7 @@ class RPCServer(rpyc.Service):
             'job_id': job_id,
             'server_dir': server_dir,
             'server_script': server_script,
+            'params': params,
             'status': status
         }
         log.info('接收任务: %s' % str(kwargs))
@@ -36,7 +37,8 @@ class RPCServer(rpyc.Service):
             if run_job:
                 return {'status': False, 'msg': '该任务已在运行中'}
             # scheduler.add_job(id=run_id, func=start_job, args=(exec_id, job_id, server_dir, server_script, status), trigger='interval', seconds=3)
-            scheduler.add_job(id=run_id, func=start_job, args=(exec_id, job_id, server_dir, server_script, status),
+            scheduler.add_job(id=run_id, func=start_job,
+                              args=(exec_id, job_id, server_dir, server_script, params, status),
                               next_run_time=next_run_time)
             return {'status': True, 'msg': '任务已开始运行'}
         except Exception as e:
