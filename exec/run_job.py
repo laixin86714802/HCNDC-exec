@@ -8,17 +8,19 @@ from model.scheduler import SchedulerModel
 from configs import db, log
 
 
-def start_job(exec_id, job_id, server_dir, server_script, params, status):
+def start_job(exec_id, job_id, server_dir, server_script, return_code, params, status):
     """开始任务"""
     log.info('开始任务: %s' % str({
         'exec_id': exec_id,
         'job_id': job_id,
         'server_dir': server_dir,
         'server_script': server_script,
-        'params': params
+        'return_code': return_code,
+        'params': params,
+        'status': status
     }))
     if status == 'preparing':
-        exec_job(exec_id, job_id, server_dir, server_script, params)
+        exec_job(exec_id, job_id, server_dir, server_script, return_code, params)
     else:
         while True:
             # 查询状态
@@ -46,10 +48,10 @@ def start_job(exec_id, job_id, server_dir, server_script, params, status):
                     'server_dir': server_dir,
                     'server_script': server_script
                 }))
-                exec_job(exec_id, job_id, server_dir, server_script, params)
+                exec_job(exec_id, job_id, server_dir, server_script, return_code, params)
 
 
-def exec_job(exec_id, job_id, server_dir, server_script, params):
+def exec_job(exec_id, job_id, server_dir, server_script, return_code, params):
     """执行任务"""
     # 配置参数
     params_str = ' '.join(params) if ' '.join(params).startswith(' ') else ' ' + ' '.join(params)
@@ -70,7 +72,8 @@ def exec_job(exec_id, job_id, server_dir, server_script, params):
         shell=True,
         bufsize=0
     )
-    p.wait()
+    # 获取返回码
+    ret_code = p.wait()
     for message in open(file_name, 'r'):
         message = message.rstrip()
         if message:
@@ -78,5 +81,12 @@ def exec_job(exec_id, job_id, server_dir, server_script, params):
             # 添加执行任务详情日志
             SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script, message,
                                                2)
-    # 添加执行任务结束日志
-    SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script, '任务结束', 3)
+    # 结束
+    if ret_code is not None:
+        # 添加执行任务结束日志
+        SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script,
+                                           '任务结束', 3)
+        # 异常
+        if ret_code != return_code:
+            raise Exception('任务异常')
+        return
