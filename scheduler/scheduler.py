@@ -9,6 +9,7 @@ from server.super_config import SuperConf
 # 配置文件
 config = SuperConf(path='superconf.json')
 
+
 class Scheduler(APScheduler):
     """单例模式"""
 

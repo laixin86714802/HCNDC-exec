@@ -1,6 +1,8 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+import signal
 import rpyc
 import psutil
 import datetime
@@ -10,6 +12,7 @@ import json
 from exec.run_job import start_job
 from configs import log, scheduler, db, config
 from model.scheduler import SchedulerModel
+from conn.mysql_lock import MysqlLock
 
 
 class RPCServer(rpyc.Service):
@@ -29,9 +32,9 @@ class RPCServer(rpyc.Service):
             'params': params,
             'status': status
         }
-        log.info('接收任务: %s' % str(kwargs))
+        log.info('接收任务: %s, run_id: %s' % (str(kwargs), run_id))
         # 添加调度任务
-        next_run_time = datetime.datetime.now() + datetime.timedelta(seconds=5)
+        next_run_time = datetime.datetime.now() + datetime.timedelta(seconds=2)
         try:
             # 查询任务是否存在
             run_job = SchedulerModel.get_scheduler_by_id(db.etl_db, run_id, config.exec.table_name)
@@ -77,3 +80,23 @@ class RPCServer(rpyc.Service):
         }
         log.info('获取测试连接请求')
         return json.dumps({'cpu': cpu_count, 'system': system, 'disk': disk_result, 'memory': memory_result})
+
+    @staticmethod
+    def exposed_stop(exec_id, job_id, pid):
+        """停止正在进行中的调度任务"""
+        # kill -9 进程id
+        if os.name == 'nt':
+            # Windows系统
+            cmd = 'taskkill /pid %s /f' % pid
+            os.system(cmd)
+        elif os.name == 'posix':
+            # Linux系统
+            cmd = 'kill -9 %s' % pid
+            os.system(cmd)
+        else:
+            raise Exception('Undefined os.name')
+        # 修改调度详情表, 分布式锁
+        with MysqlLock(config.mysql.etl, 'exec_lock_%s' % exec_id):
+            SchedulerModel.update_exec_job_status(db.etl_db, exec_id, job_id, 'failed')
+        log.error('停止调度, 执行id: %s, 任务id: %s, 任务状态: %s' % (exec_id, job_id, 'failed'))
+        return {'status': True, 'msg': '任务已停止'}

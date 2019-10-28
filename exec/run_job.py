@@ -56,8 +56,6 @@ def exec_job(exec_id, job_id, server_dir, server_script, return_code, params):
     # 配置参数
     params_str = ' '.join(params) if ' '.join(params).startswith(' ') else ' ' + ' '.join(params)
     server_script = server_script + params_str
-    # 执行任务开始
-    SchedulerModel.exec_job_start(db.etl_db, exec_id, job_id)
     # 文本日志
     file_name = './logs/%s_%s_%s.log' % (exec_id, job_id, time.strftime('%Y-%m-%d_%H%M%S', time.localtime()))
     fw = open(file_name, 'w')
@@ -72,6 +70,8 @@ def exec_job(exec_id, job_id, server_dir, server_script, return_code, params):
         shell=True,
         bufsize=0
     )
+    # 执行任务开始
+    SchedulerModel.exec_job_start(db.etl_db, exec_id, job_id, p.pid)
     # 获取返回码
     ret_code = p.wait()
     for message in open(file_name, 'r'):

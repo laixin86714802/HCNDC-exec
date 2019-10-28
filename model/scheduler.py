@@ -1,6 +1,9 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import time
+
+
 class SchedulerModel(object):
     @staticmethod
     def get_scheduler_by_id(cursor, run_id, table_name):
@@ -46,16 +49,19 @@ class SchedulerModel(object):
         return result if result else {}
 
     @staticmethod
-    def exec_job_start(cursor, exec_id, job_id):
+    def exec_job_start(cursor, exec_id, job_id, pid):
         """执行任务开始"""
         command = '''
         UPDATE tb_execute_detail
-        SET status = 'running', insert_time = UNIX_TIMESTAMP(), update_time = UNIX_TIMESTAMP()
+        SET status = 'running', insert_time = :insert_time, update_time = :update_time, pid = :pid
         WHERE exec_id = :exec_id AND job_id = :job_id
         '''
         result = cursor.update(command, {
             'exec_id': exec_id,
-            'job_id': job_id
+            'job_id': job_id,
+            'pid': pid,
+            'insert_time': int(time.time()),
+            'update_time': int(time.time())
         })
         return result
 
@@ -64,13 +70,14 @@ class SchedulerModel(object):
         """修改执行任务状态"""
         command = '''
         UPDATE tb_execute_detail
-        SET status = :status, update_time = UNIX_TIMESTAMP()
+        SET status = :status, update_time = :update_time, pid = 0
         WHERE exec_id = :exec_id AND job_id = :job_id
         '''
         result = cursor.update(command, {
             'exec_id': exec_id,
             'job_id': job_id,
-            'status': status
+            'status': status,
+            'update_time': int(time.time())
         })
         return result
 
@@ -78,8 +85,9 @@ class SchedulerModel(object):
     def add_exec_detail_job(cursor, exec_id, job_id, level, server_dir, server_script, message, type):
         """添加执行任务详情日志"""
         command = '''
-        INSERT INTO tb_schedule_detail_logs(exec_id, job_id, `level`, server_dir, server_script, `message`, `type`, insert_time)
-        VALUES (:exec_id, :job_id, :level, :server_dir, :server_script, :message, :type, UNIX_TIMESTAMP())
+        INSERT INTO tb_schedule_detail_logs(exec_id, job_id, `level`,
+        server_dir, server_script, `message`, `type`, insert_time)
+        VALUES (:exec_id, :job_id, :level, :server_dir, :server_script, :message, :type, :insert_time)
         '''
         result = cursor.insert(command, {
             'exec_id': exec_id,
@@ -88,6 +96,7 @@ class SchedulerModel(object):
             'server_dir': server_dir,
             'server_script': server_script,
             'message': message,
-            'type': type
+            'type': type,
+            'insert_time': int(time.time())
         })
         return result
