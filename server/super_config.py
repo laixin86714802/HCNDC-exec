@@ -3,8 +3,10 @@
 
 import json
 
+
 class Serialize(dict):
     """字典对象扩展"""
+
     def __init__(self, *args, **kwargs):
         super(Serialize, self).__init__(*args, **kwargs)
 
@@ -29,6 +31,7 @@ class Serialize(dict):
 
 class SuperConf(object):
     """配置读写项"""
+
     def __init__(self, path, intend=4, *args, **kwargs):
         self.path = path
         self.intend = intend
@@ -50,7 +53,6 @@ class SuperConf(object):
         """键值赋值"""
         self._serialize[key] = value
 
-
     def dump(self):
         """格式化为json字符串"""
         self.parse(self._serialize, 0)
@@ -60,7 +62,6 @@ class SuperConf(object):
         """读取文件"""
         fr = open(self.path, 'r')
         self._serialize = json.loads(fr.read())
-
 
     def guarantee(self):
         """写入文件"""
@@ -96,7 +97,7 @@ class SuperConf(object):
             self.stack.append(',')
 
         len(a) and self.stack.pop()
-        self.stack.append(self.newline(self.intend, level-1) + ']')
+        self.stack.append(self.newline(self.intend, level - 1) + ']')
 
     def parse_dict(self, o=None, level=0):
         """字典对象格式化"""
