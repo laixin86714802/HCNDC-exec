@@ -21,10 +21,12 @@ def start_job(exec_id, job_id, server_dir, server_script, return_code, params, s
     }))
     if status == 'preparing':
         exec_job(exec_id, job_id, server_dir, server_script, return_code, params)
-    else:
+    elif status == 'ready':
         while True:
             # 查询状态
             job = SchedulerModel.get_exec_job(db.etl_db, exec_id, job_id)
+            if not job:
+                return
             # 依赖任务状态
             current_status = 'preparing'
             for prep_id in job['in_degree']:
@@ -41,7 +43,7 @@ def start_job(exec_id, job_id, server_dir, server_script, return_code, params, s
                     'server_script': server_script
                 }))
                 time.sleep(20)
-            else:
+            elif current_status == 'preparing':
                 log.info('任务开始执行: %s' % str({
                     'exec_id': exec_id,
                     'job_id': job_id,
