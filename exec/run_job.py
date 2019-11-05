@@ -51,6 +51,9 @@ def start_job(exec_id, job_id, server_dir, server_script, return_code, params, s
                     'server_script': server_script
                 }))
                 exec_job(exec_id, job_id, server_dir, server_script, return_code, params)
+                break
+            else:
+                break
 
 
 def exec_job(exec_id, job_id, server_dir, server_script, return_code, params):
