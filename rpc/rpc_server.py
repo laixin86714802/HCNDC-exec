@@ -95,8 +95,5 @@ class RPCServer(rpyc.Service):
             os.system(cmd)
         else:
             raise Exception('Undefined os.name')
-        # 修改调度详情表, 分布式锁
-        with MysqlLock(config.mysql.etl, 'exec_lock_%s' % exec_id):
-            SchedulerModel.update_exec_job_status(db.etl_db, exec_id, job_id, 'failed')
         log.error('停止调度, 执行id: %s, 任务id: %s, 任务状态: %s' % (exec_id, job_id, 'failed'))
         return {'status': True, 'msg': '任务已停止'}

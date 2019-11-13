@@ -3,10 +3,8 @@
 
 import re
 
-from configs import db, log, config
-from model.scheduler import SchedulerModel
+from configs import log
 from util.request_package import request
-from conn.mysql_lock import MysqlLock
 
 
 def listener(event):
@@ -16,20 +14,14 @@ def listener(event):
     # 异常
     if event.exception:
         log.warn('执行完毕, 执行id: %s, 任务id: %s, 任务状态: %s' % (exec_id, job_id, 'failed'))
-        # 修改数据库, 分布式锁
-        with MysqlLock(config.mysql.etl, 'exec_lock_%s' % exec_id):
-            SchedulerModel.update_exec_job_status(db.etl_db, exec_id, job_id, 'failed')
         # 回调web服务
-        result = request(exec_id, 'failed')
+        result = request(exec_id, job_id, 'failed')
         if not result:
             log.error('回调web服务失败, 执行id: %s, 任务id: %s, 任务状态: %s' % (exec_id, job_id, 'failed'))
     # 正常
     else:
         log.info('执行完毕, 执行id: %s, 任务id: %s, 任务状态: %s' % (exec_id, job_id, 'succeeded'))
-        # 修改数据库, 分布式锁
-        with MysqlLock(config.mysql.etl, 'exec_lock_%s' % exec_id):
-            SchedulerModel.update_exec_job_status(db.etl_db, exec_id, job_id, 'succeeded')
         # 回调web服务
-        result = request(exec_id, 'succeeded')
+        result = request(exec_id, job_id, 'succeeded')
         if not result:
             log.error('回调web服务失败, 执行id: %s, 任务id: %s, 任务状态: %s' % (exec_id, job_id, 'succeeded'))
