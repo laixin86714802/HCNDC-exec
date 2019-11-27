@@ -6,10 +6,10 @@ import requests
 from configs import config, log
 
 
-def request(exec_id, job_id, status):
+def request(exec_id, interface_id, job_id, status):
     """封装requests请求"""
     url = 'http://%(host)s:%(port)s/execute/callback/' % {'host': config.master.host, 'port': config.master.port}
-    params = {'exec_id': exec_id, 'job_id': job_id, 'status': status}
+    params = {'exec_id': exec_id, 'interface_id': interface_id, 'job_id': job_id, 'status': status}
 
     for _ in range(5):
         try:

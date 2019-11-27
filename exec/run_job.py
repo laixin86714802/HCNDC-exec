@@ -8,10 +8,11 @@ from model.scheduler import SchedulerModel
 from configs import db, log
 
 
-def start_job(exec_id, job_id, server_dir, server_script, return_code, params, status):
+def start_job(exec_id, interface_id, job_id, server_dir, server_script, return_code, params, status):
     """开始任务"""
     log.info('开始任务: %s' % str({
         'exec_id': exec_id,
+        'interface_id': interface_id,
         'job_id': job_id,
         'server_dir': server_dir,
         'server_script': server_script,
@@ -20,11 +21,11 @@ def start_job(exec_id, job_id, server_dir, server_script, return_code, params, s
         'status': status
     }))
     if status == 'preparing':
-        exec_job(exec_id, job_id, server_dir, server_script, return_code, params)
+        exec_job(exec_id, interface_id, job_id, server_dir, server_script, return_code, params)
     elif status == 'ready':
         while True:
             # 查询状态
-            job = SchedulerModel.get_exec_job(db.etl_db, exec_id, job_id)
+            job = SchedulerModel.get_exec_job(db.etl_db, exec_id, interface_id, job_id)
             if not job:
                 return
             # 依赖任务状态
@@ -46,26 +47,29 @@ def start_job(exec_id, job_id, server_dir, server_script, return_code, params, s
             elif current_status == 'preparing':
                 log.info('任务开始执行: %s' % str({
                     'exec_id': exec_id,
+                    'interface_id': interface_id,
                     'job_id': job_id,
                     'server_dir': server_dir,
                     'server_script': server_script
                 }))
-                exec_job(exec_id, job_id, server_dir, server_script, return_code, params)
+                exec_job(exec_id, interface_id, job_id, server_dir, server_script, return_code, params)
                 break
             else:
                 break
 
 
-def exec_job(exec_id, job_id, server_dir, server_script, return_code, params):
+def exec_job(exec_id, interface_id, job_id, server_dir, server_script, return_code, params):
     """执行任务"""
     # 配置参数
     params_str = ' '.join(params) if ' '.join(params).startswith(' ') else ' ' + ' '.join(params)
     server_script = server_script + params_str
     # 文本日志
-    file_name = './logs/%s_%s_%s.log' % (exec_id, job_id, time.strftime('%Y-%m-%d_%H%M%S', time.localtime()))
+    now_time = time.strftime('%Y-%m-%d_%H%M%S', time.localtime())
+    file_name = './logs/%s_%s_%s_%s.log' % (exec_id, interface_id, job_id, now_time)
     fw = open(file_name, 'w')
     # 添加执行任务开始日志
-    SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script, '任务开始', 1)
+    SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, interface_id, job_id, 'INFO', server_dir,
+                                       server_script, '任务开始', 1)
     # 子进程
     p = subprocess.Popen(
         server_script,
@@ -76,7 +80,7 @@ def exec_job(exec_id, job_id, server_dir, server_script, return_code, params):
         bufsize=0
     )
     # 执行任务开始
-    SchedulerModel.exec_job_start(db.etl_db, exec_id, job_id, p.pid)
+    SchedulerModel.exec_job_start(db.etl_db, exec_id, interface_id, job_id, p.pid)
     # 获取返回码
     ret_code = p.wait()
     for message in open(file_name, 'r'):
@@ -84,12 +88,12 @@ def exec_job(exec_id, job_id, server_dir, server_script, return_code, params):
         if message:
             log.debug('任务详情日志: [%s]' % message)
             # 添加执行任务详情日志
-            SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script, message,
-                                               2)
+            SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, interface_id, job_id, 'INFO', server_dir,
+                                               server_script, message, 2)
     # 结束
     if ret_code is not None:
         # 添加执行任务结束日志
-        SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, job_id, 'INFO', server_dir, server_script,
+        SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, interface_id, job_id, 'INFO', server_dir, server_script,
                                            '任务结束', 3)
         # 异常
         if ret_code != return_code:

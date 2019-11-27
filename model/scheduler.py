@@ -21,16 +21,17 @@ class SchedulerModel(object):
         return result
 
     @staticmethod
-    def get_exec_job(cursor, exec_id, job_id):
+    def get_exec_job(cursor, exec_id, interface_id, job_id):
         """获取执行任务"""
         command = '''
         SELECT in_degree, run_period
         FROM tb_execute_detail
         LEFT JOIN tb_jobs USING(job_id)
-        WHERE exec_id = :exec_id AND job_id = :job_id
+        WHERE exec_id = :exec_id AND interface_id = :interface_id AND job_id = :job_id
         '''
         result = cursor.query_one(command, {
             'exec_id': exec_id,
+            'interface_id': interface_id,
             'job_id': job_id
         })
         return result if result else {}
@@ -49,15 +50,16 @@ class SchedulerModel(object):
         return result if result else {}
 
     @staticmethod
-    def exec_job_start(cursor, exec_id, job_id, pid):
+    def exec_job_start(cursor, exec_id, interface_id, job_id, pid):
         """执行任务开始"""
         command = '''
         UPDATE tb_execute_detail
         SET status = 'running', insert_time = :insert_time, update_time = :update_time, pid = :pid
-        WHERE exec_id = :exec_id AND job_id = :job_id
+        WHERE exec_id = :exec_id AND interface_id = :interface_id AND job_id = :job_id
         '''
         result = cursor.update(command, {
             'exec_id': exec_id,
+            'interface_id': interface_id,
             'job_id': job_id,
             'pid': pid,
             'insert_time': int(time.time()),
@@ -66,31 +68,16 @@ class SchedulerModel(object):
         return result
 
     @staticmethod
-    def update_exec_job_status(cursor, exec_id, job_id, status):
-        """修改执行任务状态"""
-        command = '''
-        UPDATE tb_execute_detail
-        SET status = :status, update_time = :update_time, pid = 0
-        WHERE exec_id = :exec_id AND job_id = :job_id
-        '''
-        result = cursor.update(command, {
-            'exec_id': exec_id,
-            'job_id': job_id,
-            'status': status,
-            'update_time': int(time.time())
-        })
-        return result
-
-    @staticmethod
-    def add_exec_detail_job(cursor, exec_id, job_id, level, server_dir, server_script, message, type):
+    def add_exec_detail_job(cursor, exec_id, interface_id, job_id, level, server_dir, server_script, message, type):
         """添加执行任务详情日志"""
         command = '''
-        INSERT INTO tb_schedule_detail_logs(exec_id, job_id, `level`,
+        INSERT INTO tb_schedule_detail_logs(exec_id, interface_id, job_id, `level`,
         server_dir, server_script, `message`, `type`, insert_time)
-        VALUES (:exec_id, :job_id, :level, :server_dir, :server_script, :message, :type, :insert_time)
+        VALUES (:exec_id, :interface_id, :job_id, :level, :server_dir, :server_script, :message, :type, :insert_time)
         '''
         result = cursor.insert(command, {
             'exec_id': exec_id,
+            'interface_id': interface_id,
             'job_id': job_id,
             'level': level,
             'server_dir': server_dir,
