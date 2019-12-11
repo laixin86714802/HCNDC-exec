@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-import signal
+# import signal
 import rpyc
 import psutil
 import datetime
@@ -12,7 +12,7 @@ import json
 from exec.run_job import start_job
 from configs import log, scheduler, db, config
 from model.scheduler import SchedulerModel
-from conn.mysql_lock import MysqlLock
+# from conn.mysql_lock import MysqlLock
 
 
 class RPCServer(rpyc.Service):
