@@ -11,9 +11,9 @@
   },
   "schedule": {
     "max_overflow": 5,
-    "max_workers": 50,
+    "max_workers": 20,
     "max_instances": 1,
-    "misfire_grace_time ": 36000
+    "misfire_grace_time": 36000
   },
   "master": {
     "host": "localhost",

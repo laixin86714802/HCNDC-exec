@@ -6,3 +6,4 @@ Werkzeug==0.14.1
 rpyc==4.0.2
 APScheduler==3.5.3
 pycryptodome
+psutil
