@@ -58,21 +58,21 @@ def start_job(exec_id, interface_id, job_id, server_dir, server_script, return_c
                 break
 
 
-def exec_job(exec_id, interface_id, job_id, server_dir, server_script, return_code, params):
+def exec_job(exec_id, interface_id, job_id, server_dir, server_script, return_code, params, retry=0):
     """执行任务"""
     # 配置参数
     params_str = ' '.join(params) if ' '.join(params).startswith(' ') else ' ' + ' '.join(params)
-    server_script = server_script + params_str
+    server_script_run = server_script + params_str
     # 文本日志
     now_time = time.strftime('%Y-%m-%d_%H%M%S', time.localtime())
     file_name = './logs/%s_%s_%s_%s.log' % (exec_id, interface_id, job_id, now_time)
     fw = open(file_name, 'w')
     # 添加执行任务开始日志
     SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, interface_id, job_id, 'INFO', server_dir,
-                                       server_script, '任务开始', 1)
+                                       server_script_run, '任务开始', 1)
     # 子进程
     p = subprocess.Popen(
-        server_script,
+        server_script_run,
         cwd=server_dir,
         stdout=fw,
         stderr=fw,
@@ -89,13 +89,18 @@ def exec_job(exec_id, interface_id, job_id, server_dir, server_script, return_co
             log.debug('任务详情日志: [%s]' % message)
             # 添加执行任务详情日志
             SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, interface_id, job_id, 'INFO', server_dir,
-                                               server_script, message, 2)
+                                               server_script_run, message, 2)
     # 结束
     if ret_code is not None:
         # 添加执行任务结束日志
-        SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, interface_id, job_id, 'INFO', server_dir, server_script,
-                                           '任务结束', 3)
+        SchedulerModel.add_exec_detail_job(db.etl_db, exec_id, interface_id, job_id, 'INFO', server_dir,
+                                           server_script_run, '任务结束', 3)
         # 异常
         if ret_code != return_code:
-            raise Exception('任务异常')
+            if retry >= 3:
+                raise Exception('任务异常')
+            # 重试三次
+            else:
+                time.sleep(10)
+                exec_job(exec_id, interface_id, job_id, server_dir, server_script, return_code, params, retry=retry + 1)
         return
