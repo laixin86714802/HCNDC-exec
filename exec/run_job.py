@@ -101,6 +101,6 @@ def exec_job(exec_id, interface_id, job_id, server_dir, server_script, return_co
                 raise Exception('任务异常')
             # 重试三次
             else:
-                time.sleep(10)
+                time.sleep(600)
                 exec_job(exec_id, interface_id, job_id, server_dir, server_script, return_code, params, retry=retry + 1)
         return
